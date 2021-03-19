@@ -41,7 +41,6 @@
       
       // 5. Drawing our points
       svg.append('g')
-        .attr('transform', d => `translate(${margin.left}, ${margin.top})`)
         .selectAll('path') // d3-shape functions (like d3.symbol) generate attributes for SVG <path> elements
         .data(data)
         .join('circle') // Using circle here instead of path with symbol

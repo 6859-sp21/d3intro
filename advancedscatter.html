@@ -49,7 +49,6 @@
         // 5. Drawing our points
         const symbol = d3.symbol();
         svg.append('g')
-          .attr('transform', d => `translate(${margin.left}, ${margin.top})`)
           .selectAll('path') // d3-shape functions (like d3.symbol) generate attributes for SVG <path> elements
           .data(data)
           .join('path')
