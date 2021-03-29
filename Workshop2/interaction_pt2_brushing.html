@@ -1,0 +1,127 @@
+<html>
+  <head>
+    <!-- Load d3.js -->
+    <script src="https://d3js.org/d3.v6.js"></script>
+  </head>
+  <body>
+    <h1>6.859: D3 Interaction pt 2</h1>
+
+    <div id="chart" style="width:520px;height:420px;">
+      <!-- This is where we will put our chart. -->
+    </div>
+    <style>
+      .selected {
+        opacity: 1 !important;
+        stroke: black;
+        stroke-width: 1px;
+      }
+    </style>
+
+    <script>
+      // Load data from a URL. You can also have the json file downloaded.
+      // See https://github.com/d3/d3/blob/master/API.md#fetches-d3-fetch for more options.
+      d3.json("https://cdn.jsdelivr.net/npm/vega-datasets@2.2.0/data/gapminder.json").then((gapminder) => {
+
+        // 1. Filtering our data to just 1955
+        const year = 1955;
+        const data = gapminder.filter(d => d.year === year);
+
+        // 2. Setting up variables that describe our chart's space.
+        const height = 400;
+        const width = 500;;
+        const margin = ({top: 10, right: 10, bottom: 20, left: 20});
+
+        // 3. Create a SVG we will use to make our chart.
+        // See https://developer.mozilla.org/en-US/docs/Web/SVG for more on SVGs.
+        const svg = d3.create('svg')
+          .attr('width', width)
+          .attr('height', height);
+
+        // 4. Setting up scales.
+        const xScale = d3.scaleLinear()
+          .domain([0, d3.max(gapminder, d => d.fertility)])
+          .range([margin.left, width - margin.right])
+          .nice();
+
+        const yScale = d3.scaleLinear()
+          .domain([0, d3.max(gapminder, d => d.life_expect)])
+          .range([height - margin.bottom, margin.top])
+          .nice();
+
+        const colorScale = d3.scaleOrdinal()
+          .domain(gapminder.map(d => d.cluster))
+          .range(d3.schemeTableau10); // try other schemes, too!
+
+
+        // 5. Drawing our points
+        const symbol = d3.symbol();
+        svg.append('g')
+          .selectAll('path') // d3-shape functions (like d3.symbol) generate attributes for SVG <path> elements
+          .data(data)
+          .join('path')
+          .attr('transform', d => `translate(${xScale(d.fertility)}, ${yScale(d.life_expect)})`)
+          .attr('fill', d => colorScale(d.cluster))
+          .attr('d', d => symbol()) // Notice, the output of the d3.symbol is wired up to the "d" attribute.
+
+        //6. Drawing our x-axis
+        svg.append('g')
+        .attr('transform', `translate(0, ${height - margin.bottom})`)
+        .call(d3.axisBottom(xScale))
+        // Add x-axis title 'text' element.
+        .append('text')
+          .attr('text-anchor', 'end')
+          .attr('fill', 'black')
+          .attr('font-size', '12px')
+          .attr('font-weight', 'bold')
+          .attr('x', width - margin.right)
+          .attr('y', -10)
+          .text('Fertility');
+
+        //7. Drawing our y-axis
+        svg.append('g')
+          .attr('transform', `translate(${margin.left}, 0)`)
+          .call(d3.axisLeft(yScale))
+          // Add y-axis title 'text' element.
+          .append('text')
+            .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
+            .attr('text-anchor', 'end')
+            .attr('fill', 'black')
+            .attr('font-size', '12px')
+            .attr('font-weight', 'bold')
+            .text('Life Expectancy');
+
+        //8.  Adding a background label for the year.
+        const yearLabel = svg.append('text')
+          .attr('x', 40)
+          .attr('y', height - margin.bottom - 20)
+          .attr('fill', '#ccc')
+          .attr('font-family', 'Helvetica Neue, Arial')
+          .attr('font-weight', 500)
+          .attr('font-size', 80)
+          .text(year);
+
+        // 9. Adding a brush to allow selecting a sub-region
+        const brush = d3.brush()  // Add the brush feature using the d3.brush function
+          // initialise the brush area
+          .extent([[0, 0], [width, height]]) // wrong
+          .extent([[margin.left, 0], [width, height-margin.bottom]])
+          .on("end", brushended)
+
+        svg.append("g")
+            .attr("class", "brush")
+            .call(brush)
+
+        function brushended() {
+          console.log("Brush has ended");
+
+        };
+
+        document.getElementById("chart").appendChild(svg.node());
+      });
+
+      </script>
+  </body>
+
+  <!-- This adapted from Arvind's observable from lecture. https://observablehq.com/d/4c93c3a516d35624 -->
+  <!-- Great D3 intro resource: https://observablehq.com/@d3/learn-d3?collection=@d3/learn-d3 -->
+</html>
