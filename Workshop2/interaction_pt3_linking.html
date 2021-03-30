@@ -67,9 +67,9 @@
 
         //*********************************************************************
         // Draw our histogram
-        const width_histo = 550,
+        const width_histo = 500,
               height_histo = 150,
-              margin_histo = {top: 10, right: 0, bottom: 20, left: 30};
+              margin_histo = {top: 10, right: 0, bottom: 20, left: 150};
 
         const svg_histo = d3.create('svg')
           .attr('width', width_histo)
@@ -90,6 +90,13 @@
           .range([margin_histo.left, width_histo - margin_histo.right])
           .nice();
 
+          const continents = ['South Asia',
+            'Europe & Central Asia',
+            'Sub-Saharan Africa',
+            'America',
+            'East Asia & Pacific',
+            'Middle East & North Africa'];
+
         const yScale_Histo = d3.scaleBand()
           .domain(rawAggregate.map(d => d.key))
           .range([height_histo - margin_histo.bottom, margin_histo.top])
@@ -103,7 +110,7 @@
         svg_histo.append('g')
           .classed('x-axis', true)
           .attr('transform', `translate(${margin_histo.left}, 0)`)
-          .call(d3.axisLeft(yScale_Histo));
+          .call(d3.axisLeft(yScale_Histo).tickFormat((d,i) => continents[d]));
 
         const g_hist = svg_histo.append('g')
           .classed('marks', true);
