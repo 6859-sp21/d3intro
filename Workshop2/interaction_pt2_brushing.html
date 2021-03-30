@@ -55,13 +55,28 @@
 
         // 5. Drawing our points
         const symbol = d3.symbol();
-        svg.append('g')
-          .selectAll('path') // d3-shape functions (like d3.symbol) generate attributes for SVG <path> elements
-          .data(data)
-          .join('path')
-          .attr('transform', d => `translate(${xScale(d.fertility)}, ${yScale(d.life_expect)})`)
-          .attr('fill', d => colorScale(d.cluster))
-          .attr('d', d => symbol()) // Notice, the output of the d3.symbol is wired up to the "d" attribute.
+        const g = svg.append('g')
+          // .selectAll('path') // d3-shape functions (like d3.symbol) generate attributes for SVG <path> elements
+          // .data(data)
+          // .join('path')
+          // .attr('transform', d => `translate(${xScale(d.fertility)}, ${yScale(d.life_expect)})`)
+          // .attr('fill', d => colorScale(d.cluster))
+          // .attr('d', d => symbol()) // Notice, the output of the d3.symbol is wired up to the "d" attribute.
+
+        //NEW: replaces above code so this can be called later by our brush element
+        function dataJoin(rawData = gapminder) {    
+            const data = rawData.filter(d => d.year === year);
+            
+            g.selectAll('path')
+                .data(data)
+                .join('path')
+                  .classed('country', true) // can reference these marks like css, i.e. 'path.country'
+                  .attr('transform', d => `translate(${xScale(d.fertility)}, ${yScale(d.life_expect)})`)
+                  .attr('fill', d => colorScale(d.cluster))
+                  .attr('fill-opacity', 0.7)
+                  .attr('d', d => symbol())
+          } 
+        dataJoin();
 
         //6. Drawing our x-axis
         svg.append('g')
@@ -100,21 +115,43 @@
           .attr('font-size', 80)
           .text(year);
 
+        // NEW: adding a brush
         // 9. Adding a brush to allow selecting a sub-region
         const brush = d3.brush()  // Add the brush feature using the d3.brush function
           // initialise the brush area
           .extent([[0, 0], [width, height]]) // wrong
           .extent([[margin.left, 0], [width, height-margin.bottom]])
-          .on("end", brushended)
+          .on("start brush end", brushed)
 
+        // 10. append element and call brush
         svg.append("g")
             .attr("class", "brush")
             .call(brush)
 
-        function brushended() {
-          console.log("Brush has ended");
-
+        // 11. add brush callback to handle brush event
+        function brushed(event) {
+          const coords = event.selection; // [[x0, y0], [x1, y1]] for 2D brushes; [x0, x1] or [y0, y1] for 1D brushes
+          if (coords) {
+            const [[x0, y0], [x1, y1]] = coords; 
+            const brushedData = gapminder.map(d => {
+              return {
+                ...d,
+                selected: x0 <= xScale(d.fertility) && xScale(d.fertility) < x1 && y0 <= yScale(d.life_expect) && yScale(d.life_expect) < y1
+              };
+            });
+            wrappedDataJoin(brushedData);
+          }
         };
+
+        // Helper to handle the brushed data coloring
+        function wrappedDataJoin(data) {
+          const filteredData = data.filter(d => d.year === year);
+    
+          dataJoin(filteredData);
+          
+          svg.selectAll('path.country')
+            .style('fill', d => d.selected ? colorScale(d.cluster) : 'lightgray')
+        }
 
         document.getElementById("chart").appendChild(svg.node());
       });
