@@ -63,19 +63,27 @@
           // .attr('fill', d => colorScale(d.cluster))
           // .attr('d', d => symbol()) // Notice, the output of the d3.symbol is wired up to the "d" attribute.
 
+          // helper that tackles selection and cluster color in the absence of a selection
+          function getClusterColor(datum) {
+            if (datum.hasOwnProperty("selected") && !datum.selected) {
+              return "lightgray";
+            }
+            return colorScale(datum.cluster);
+          };
+
         //NEW: replaces above code so this can be called later by our brush element
-        function dataJoin(rawData = gapminder) {    
+        function dataJoin(rawData = gapminder) {
             const data = rawData.filter(d => d.year === year);
-            
+
             g.selectAll('path')
                 .data(data)
                 .join('path')
                   .classed('country', true) // can reference these marks like css, i.e. 'path.country'
                   .attr('transform', d => `translate(${xScale(d.fertility)}, ${yScale(d.life_expect)})`)
-                  .attr('fill', d => colorScale(d.cluster))
+                  .attr('fill', d => getClusterColor(d))
                   .attr('fill-opacity', 0.7)
                   .attr('d', d => symbol())
-          } 
+          }
         dataJoin();
 
         //6. Drawing our x-axis
@@ -132,26 +140,27 @@
         function brushed(event) {
           const coords = event.selection; // [[x0, y0], [x1, y1]] for 2D brushes; [x0, x1] or [y0, y1] for 1D brushes
           if (coords) {
-            const [[x0, y0], [x1, y1]] = coords; 
+            const [[x0, y0], [x1, y1]] = coords;
+
+            // augment the data with a field "selected" which is set to true only
+            // for points within the brush selection
             const brushedData = gapminder.map(d => {
               return {
                 ...d,
                 selected: x0 <= xScale(d.fertility) && xScale(d.fertility) < x1 && y0 <= yScale(d.life_expect) && yScale(d.life_expect) < y1
               };
             });
-            wrappedDataJoin(brushedData);
+
+            dataJoin(brushedData);
           }
         };
 
-        // Helper to handle the brushed data coloring
-        function wrappedDataJoin(data) {
-          const filteredData = data.filter(d => d.year === year);
-    
-          dataJoin(filteredData);
-          
-          svg.selectAll('path.country')
-            .style('fill', d => d.selected ? colorScale(d.cluster) : 'lightgray')
-        }
+        // 12. adding a clear on double click
+        svg.on('dblclick', (event, d) => {
+          // gapminder data is not augmented with the "selected" field above,
+          // so getClusterColor knows to not grey things out
+          dataJoin(gapminder);
+        });
 
         document.getElementById("chart").appendChild(svg.node());
       });
