@@ -56,6 +56,7 @@
         // 5. Drawing our points
         const symbol = d3.symbol();
         const g = svg.append('g')
+          .classed('marks', true)
           // .selectAll('path') // d3-shape functions (like d3.symbol) generate attributes for SVG <path> elements
           // .data(data)
           // .join('path')
@@ -131,8 +132,8 @@
           .extent([[margin.left, 0], [width, height-margin.bottom]])
           .on("start brush end", brushed)
 
-        // 10. append element and call brush
-        svg.append("g")
+        // 10. select marks and call brush on the,
+        svg.select("g.marks")
             .attr("class", "brush")
             .call(brush)
 
