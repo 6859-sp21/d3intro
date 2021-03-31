@@ -4,7 +4,7 @@
     <script src="https://d3js.org/d3.v6.js"></script>
   </head>
   <body>
-    <h1>6.859: D3 Interaction pt 2</h1>
+    <h1>6.859: D3 Interaction pt 3 - Linking</h1>
 
     <div id="chart" style="width:520px;height:420px;">
       <!-- This is where we will put our chart. -->
@@ -56,6 +56,7 @@
         // 5. Drawing our points
         const symbol = d3.symbol();
         const g = svg.append('g')
+          .classed('marks', true)
 
           // helper that tackles selection and cluster color in the absence of a selection
           function getClusterColor(datum) {
@@ -201,7 +202,7 @@
           .on("start brush end", brushed)
 
         // 10. append element and call brush
-        svg.append("g")
+        svg.select("g.marks")
             .attr("class", "brush")
             .call(brush)
 
