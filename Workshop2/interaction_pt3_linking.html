@@ -76,9 +76,9 @@
           .attr('width', width_histo)
           .attr('height', height_histo);
 
+        // Helper function to nicely aggregate the data to plot on the histogram
         // output: [{key: 0, value: 495927174}, {key: 1, value: 355392405}, ...{key: 5, value: 854125031}]
         const aggregate_Histo = (data) => d3.rollups(
-          // data.filter(d => d.year === year),
           data.filter(d => (d.year === year && (!d.hasOwnProperty('selected') || d.selected == true))),
           vals => d3.sum(vals, d => d.pop),
           d => d.cluster
@@ -91,13 +91,6 @@
           .range([margin_histo.left, width_histo - margin_histo.right])
           .nice();
 
-          const continents = ['South Asia',
-            'Europe & Central Asia',
-            'Sub-Saharan Africa',
-            'America',
-            'East Asia & Pacific',
-            'Middle East & North Africa'];
-
         const yScale_Histo = d3.scaleBand()
           .domain(rawAggregate.map(d => d.key))
           .range([height_histo - margin_histo.bottom, margin_histo.top])
@@ -108,43 +101,63 @@
           .attr('transform', `translate(0, ${height_histo - margin_histo.bottom})`)
           .call(d3.axisBottom(xScale_Histo).ticks(3));
 
+        const continents = ['South Asia',
+          'Europe & Central Asia',
+          'Sub-Saharan Africa',
+          'America',
+          'East Asia & Pacific',
+          'Middle East & North Africa'];
+          
         svg_histo.append('g')
-          .classed('x-axis', true)
+          .classed('y-axis', true)
           .attr('transform', `translate(${margin_histo.left}, 0)`)
           .call(d3.axisLeft(yScale_Histo).tickFormat((d,i) => continents[d]));
 
         const g_hist = svg_histo.append('g')
           .classed('marks', true);
 
+        //histogram datajoin
         function dataJoinHisto(rawData = gapminder) {
           const data = aggregate_Histo(rawData);
-          console.log(data);
+          // console.log(data);
 
           g_hist.selectAll('rect')
             .data(data)
-            .join('rect')
-              .attr('x', margin_histo.left)
-              .attr('y', d => yScale_Histo(d.key))
-              .attr('width', d => xScale_Histo(d.value) - margin_histo.left)
-              .attr('height', yScale_Histo.bandwidth())
-              .style('fill', d => colorScale(d.key))
+            // // join without animation:
+            // .join('rect')
+            //   .attr('x', margin_histo.left)
+            //   .attr('y', d => yScale_Histo(d.key))
+            //   .attr('width', d => xScale_Histo(d.value) - margin_histo.left)
+            //   .attr('height', yScale_Histo.bandwidth())
+            //   .style('fill', d => colorScale(d.key))
+            // // To animate the changes instead:
+            .join(
+              enter => enter.append("rect")
+                  .attr("fill", d => colorScale(d.key))
+                  .attr('x', margin_histo.left)
+                  .attr('y', d => yScale_Histo(d.key))
+                  .attr('height', yScale_Histo.bandwidth())
+                .call(enter => enter.transition().duration(1000)
+                  .attr('width', d => xScale_Histo(d.value) - margin_histo.left)),
+              update => update
+                  .attr("fill", d => colorScale(d.key))
+                  .attr('y', d => yScale_Histo(d.key))
+                  // .attr('width', d => xScale_Histo(d.value) - margin_histo.left),
+                .call(update => update.transition().duration(200)
+                  .attr('width', d => xScale_Histo(d.value) - margin_histo.left)),
+              exit => exit
+                .call(exit => exit.transition().duration(1000)
+                  .attr('width', d => xScale_Histo(0) - margin_histo.left)
+                  .remove())
+            );
 
         }
         //*********************************************************************
 
-        // Helper to draw both the scatter plot and the histogram
-        function chartsDataJoin(rawData = gapminder) {
-          dataJoin(rawData);
-
-          // this is for the histogram
-          dataJoinHisto(rawData);
-        };
-
-        //NEW: replaces above code so this can be called later by our brush element
+        //scatter plot datajoin
         function dataJoin(rawData = gapminder) {
             const data = rawData.filter(d => d.year === year);
 
-            // this is for the scatter plot
             g.selectAll('path')
                 .data(data)
                 .join('path')
@@ -154,6 +167,16 @@
                   .attr('fill-opacity', 0.7)
                   .attr('d', d => symbol())
           }
+
+
+        // Helper to draw both the scatter plot and the histogram
+        function chartsDataJoin(rawData = gapminder) {
+          dataJoin(rawData);
+
+          // this is for the histogram
+          dataJoinHisto(rawData);
+        };
+
         chartsDataJoin();
 
         //6. Drawing our x-axis
@@ -193,7 +216,6 @@
           .attr('font-size', 80)
           .text(year);
 
-        // NEW: adding a brush
         // 9. Adding a brush to allow selecting a sub-region
         const brush = d3.brush()  // Add the brush feature using the d3.brush function
           // initialise the brush area

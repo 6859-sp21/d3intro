@@ -64,14 +64,6 @@
           // .attr('fill', d => colorScale(d.cluster))
           // .attr('d', d => symbol()) // Notice, the output of the d3.symbol is wired up to the "d" attribute.
 
-          // helper that tackles selection and cluster color in the absence of a selection
-          function getClusterColor(datum) {
-            if (datum.hasOwnProperty("selected") && !datum.selected) {
-              return "lightgray";
-            }
-            return colorScale(datum.cluster);
-          };
-
         //NEW: replaces above code so this can be called later by our brush element
         function dataJoin(rawData = gapminder) {
             const data = rawData.filter(d => d.year === year);
@@ -86,6 +78,14 @@
                   .attr('d', d => symbol())
           }
         dataJoin();
+
+        // helper that tackles selection and cluster color in the absence of a selection
+        function getClusterColor(datum) {
+            if (datum.hasOwnProperty("selected") && !datum.selected) {
+              return "lightgray";
+            }
+            return colorScale(datum.cluster);
+          };
 
         //6. Drawing our x-axis
         svg.append('g')
@@ -127,12 +127,13 @@
         // NEW: adding a brush
         // 9. Adding a brush to allow selecting a sub-region
         const brush = d3.brush()  // Add the brush feature using the d3.brush function
-          // initialise the brush area
-          .extent([[0, 0], [width, height]]) // wrong
-          .extent([[margin.left, 0], [width, height-margin.bottom]])
           .on("start brush end", brushed)
+          // // shorthand way of doing the following:
+          // .on("start", brushed)
+          // .on("brush", brushed)
+          // .on("end", brushed)
 
-        // 10. select marks and call brush on the,
+        // 10. select marks and call brush on the brush callback
         svg.select("g.marks")
             .attr("class", "brush")
             .call(brush)
